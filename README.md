@@ -3,6 +3,11 @@ helm-oci-proxy
 
 This take a legacy Helm repo and serve it as OCI registry.
 
+## Features
+
+- Turn legacy Helm repo into OCI Helm repo
+- Cache with GCS.
+
 ## Usage
 
 I'm using Argo Helm as an example here.
