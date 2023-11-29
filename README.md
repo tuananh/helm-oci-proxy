@@ -8,6 +8,12 @@ This take a legacy Helm repo and serve it as OCI registry.
 - Turn legacy Helm repo into OCI Helm repo
 - Cache with GCS.
 
+Some potential features we can add:
+
+- Add namespace so we can add proxy multiple legacy helm repos, probably with a config file.
+- Add caching with S3.
+- Remove dependency on Helm CLI.
+
 ## Usage
 
 I'm using Argo Helm as an example here.
