@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	execute "github.com/alexellis/go-execute/v2"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
@@ -116,7 +116,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// If it doesn't exist, this will return 404.
 		parts := strings.Split(r.URL.Path, "/")
 		digest := parts[len(parts)-1]
-		serve.Blob(w, r, digest)
+		s.storage.Blob(w, r, digest)
 	case strings.Contains(path, "/manifests/"):
 		s.serveHelmManifest(w, r)
 	default:
@@ -147,23 +147,17 @@ func (s *server) serveHelmManifest(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Length", fmt.Sprintf("%d", desc.Size))
 			return
 		}
-		serve.Blob(w, r, tagOrDigest)
+		s.storage.Blob(w, r, tagOrDigest)
 		return
 	}
 
-	chartName := parts[0]
+	chartName := parts[1]
 
 	// Find the appropriate repo based on prefix
 	var repoURL string
 	for _, repo := range s.config.Repositories {
 		if strings.HasPrefix(chartName, repo.Prefix) {
 			repoURL = repo.URL
-			// If prefix is not empty, remove it from the chart name
-			if repo.Prefix != "" {
-				chartName = strings.TrimPrefix(chartName, repo.Prefix)
-				// Remove leading slash if present
-				chartName = strings.TrimPrefix(chartName, "/")
-			}
 			break
 		}
 	}
@@ -180,7 +174,7 @@ func (s *server) serveHelmManifest(w http.ResponseWriter, r *http.Request) {
 	// Check if we've already got a manifest for this chart
 	if _, err := s.storage.BlobExists(ctx, ck); err == nil {
 		slog.InfoContext(ctx, "serving cached manifest:", "cacheKey", ck)
-		serve.Blob(w, r, ck)
+		s.storage.Blob(w, r, ck)
 		return
 	}
 
@@ -200,31 +194,101 @@ func (s *server) serveHelmManifest(w http.ResponseWriter, r *http.Request) {
 
 // Download the Helm chart and package it into v1.Image
 func (s *server) build(ctx context.Context, repoURL string, chartName string, chartVersion string) (v1.Image, error) {
+	slog.InfoContext(ctx, "build", "repoURL", repoURL, "chartName", chartName, "chartVersion", chartVersion)
+
 	wd, err := os.MkdirTemp("", "helm-oci-proxy-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create working directory: %w", err)
 	}
+
+	// TODO: remove this
 	// defer os.RemoveAll(wd)
 
-	// TODO: ugly but using Helm downloader is way way too complicated.
-	// however, I'm probably going to remove this anyway since I dont want to depend on Helm CLI
-	task := execute.ExecTask{
-		Command: "helm",
-		Args: []string{
-			"pull", fmt.Sprintf("%s/%s", repoURL, chartName), "--version", chartVersion,
-			"--destination", wd,
-		},
-		Env:         os.Environ(),
-		StreamStdio: true,
-	}
-	_, err = task.Execute(context.Background())
+	// Download and parse the index.yaml file
+	indexURL := fmt.Sprintf("%s/index.yaml", repoURL)
+	slog.InfoContext(ctx, "Downloading index", "url", indexURL)
+
+	resp, err := http.Get(indexURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to download helm chart: %w", err)
+		return nil, fmt.Errorf("failed to download index.yaml: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download index.yaml, status: %d", resp.StatusCode)
 	}
 
-	path := path.Join(wd, fmt.Sprintf("argo-cd-%s.tgz", chartVersion))
+	indexData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read index.yaml: %w", err)
+	}
 
-	chartBytes, err := os.ReadFile(path)
+	// Parse the index.yaml file
+	var index struct {
+		Entries map[string][]struct {
+			Name    string   `yaml:"name"`
+			Version string   `yaml:"version"`
+			URLs    []string `yaml:"urls"`
+		} `yaml:"entries"`
+	}
+
+	if err := yaml.Unmarshal(indexData, &index); err != nil {
+		return nil, fmt.Errorf("failed to parse index.yaml: %w", err)
+	}
+
+	// Find the chart URL
+	var chartURL string
+	entries, ok := index.Entries[chartName]
+	if !ok {
+		return nil, fmt.Errorf("chart %s not found in index", chartName)
+	}
+
+	for _, entry := range entries {
+		if entry.Version == chartVersion {
+			if len(entry.URLs) == 0 {
+				return nil, fmt.Errorf("no URLs found for chart %s version %s", chartName, chartVersion)
+			}
+			chartURL = entry.URLs[0]
+			break
+		}
+	}
+
+	if chartURL == "" {
+		return nil, fmt.Errorf("version %s not found for chart %s", chartVersion, chartName)
+	}
+
+	// If the URL is relative, prepend the repo URL
+	if !strings.HasPrefix(chartURL, "http") {
+		chartURL = fmt.Sprintf("%s/%s", repoURL, chartURL)
+	}
+
+	// Download the chart
+	slog.InfoContext(ctx, "Downloading chart", "url", chartURL)
+	chartResp, err := http.Get(chartURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download chart: %w", err)
+	}
+	defer chartResp.Body.Close()
+
+	if chartResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download chart, status: %d", chartResp.StatusCode)
+	}
+
+	// Save the chart to a temporary file
+	chartPath := path.Join(wd, fmt.Sprintf("%s-%s.tgz", chartName, chartVersion))
+	chartFile, err := os.Create(chartPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create chart file: %w", err)
+	}
+
+	if _, err := io.Copy(chartFile, chartResp.Body); err != nil {
+		chartFile.Close()
+		return nil, fmt.Errorf("failed to save chart file: %w", err)
+	}
+	chartFile.Close()
+
+	// Read the chart file
+	chartBytes, err := os.ReadFile(chartPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read chart from file: %w", err)
 	}
@@ -240,7 +304,7 @@ func (s *server) build(ctx context.Context, repoURL string, chartName string, ch
 	}
 
 	// we create 2 layers: config & chart layer content
-	v1Layer, err := v1tar.LayerFromFile(path, v1tar.WithMediaType(registry.ChartLayerMediaType))
+	v1Layer, err := v1tar.LayerFromFile(chartPath, v1tar.WithMediaType(registry.ChartLayerMediaType))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OCI layer from .tgz: %w", err)
 	}

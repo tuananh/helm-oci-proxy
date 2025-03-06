@@ -1,0 +1,13 @@
+port: 5000
+
+storage:
+  type: gcs                            # Options: "s3" or "gcs"
+  bucket: test-bucket-anhtt109            # Bucket name
+  region: ap-southeast-1              # Region (for S3)
+
+# List of Helm repositories to proxy
+repositories:
+  - url: https://argoproj.github.io/argo-helm
+    prefix: argo
+  - url: https://charts.jetstack.io
+    prefix: jetstack
