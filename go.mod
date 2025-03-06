@@ -5,6 +5,7 @@ go 1.24
 require (
 	cloud.google.com/go/storage v1.35.1
 	github.com/alexellis/go-execute/v2 v2.2.1
+	github.com/aws/aws-sdk-go v1.55.6
 	github.com/google/go-containerregistry v0.16.1
 	golang.org/x/sync v0.5.0
 	google.golang.org/api v0.151.0
@@ -44,6 +45,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.17.3 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect

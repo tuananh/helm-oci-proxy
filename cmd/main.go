@@ -53,17 +53,22 @@ func main() {
 			os.Exit(1)
 		}
 		slog.InfoContext(ctx, "Loaded configuration from file", "path", *configFile)
-	}
+	} else {
+		slog.InfoContext(ctx, "No config file provided, using environment variables")
 
-	// Environment variables override config file for backward compatibility
-	if repoURL := os.Getenv("REPO_URL"); repoURL != "" {
-		// Add as the first repo with empty prefix
-		config.Repos = append([]types.RepoConfig{{URL: repoURL, Prefix: ""}}, config.Repos...)
-		slog.InfoContext(ctx, "Added repo from environment variable", "repoURL", repoURL)
-	}
+		// For backward compatibility, check environment variables
+		if bucket := os.Getenv("BUCKET"); bucket != "" {
+			config.Storage.Bucket = bucket
+		}
 
-	if port := os.Getenv("PORT"); port != "" {
-		config.Port = port
+		if repoURL := os.Getenv("REPO_URL"); repoURL != "" {
+			config.Repos = append(config.Repos, types.RepoConfig{URL: repoURL, Prefix: ""})
+			slog.InfoContext(ctx, "Added repo from environment variable", "repoURL", repoURL)
+		}
+
+		if port := os.Getenv("PORT"); port != "" {
+			config.Port = port
+		}
 	}
 
 	// Validate required configuration
@@ -89,7 +94,7 @@ func main() {
 
 	slog.InfoContext(ctx, "Listening...", "port", config.Port)
 	slog.InfoContext(ctx, "Proxy Helm repo:", "repos", config.Repos)
-	slog.InfoContext(ctx, "Storage configuration:", "type", config.Storage.Type, "endpoint", config.Storage.Endpoint)
+	slog.InfoContext(ctx, "Storage configuration:", "type", config.Storage.Type, "bucket", config.Storage.Bucket)
 	slog.ErrorContext(ctx, "ListenAndServe", "err", http.ListenAndServe(fmt.Sprintf(":%s", config.Port), nil))
 }
 
@@ -109,7 +114,7 @@ func loadConfig(filePath string, config *types.Config) error {
 
 type server struct {
 	info, error *log.Logger
-	storage     *serve.Storage
+	storage     serve.StorageBackend
 	config      types.Config
 }
 
