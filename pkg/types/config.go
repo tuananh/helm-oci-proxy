@@ -2,9 +2,9 @@ package types
 
 // Config represents the application configuration
 type Config struct {
-	Port    string        `yaml:"port"`
-	Repos   []RepoConfig  `yaml:"repos"`
-	Storage StorageConfig `yaml:"storage"`
+	Port         string        `yaml:"port"`
+	Repositories []RepoConfig  `yaml:"repositories"`
+	Storage      StorageConfig `yaml:"storage"`
 }
 
 // RepoConfig represents a Helm repository configuration

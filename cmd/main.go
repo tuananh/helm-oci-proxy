@@ -39,8 +39,8 @@ func main() {
 
 	// Initialize default config
 	config := types.Config{
-		Port:  "5000",
-		Repos: []types.RepoConfig{},
+		Port:         "5000",
+		Repositories: []types.RepoConfig{},
 		Storage: types.StorageConfig{
 			Type: "gcs", // Default to GCS for backward compatibility
 		},
@@ -53,26 +53,10 @@ func main() {
 			os.Exit(1)
 		}
 		slog.InfoContext(ctx, "Loaded configuration from file", "path", *configFile)
-	} else {
-		slog.InfoContext(ctx, "No config file provided, using environment variables")
-
-		// For backward compatibility, check environment variables
-		if bucket := os.Getenv("BUCKET"); bucket != "" {
-			config.Storage.Bucket = bucket
-		}
-
-		if repoURL := os.Getenv("REPO_URL"); repoURL != "" {
-			config.Repos = append(config.Repos, types.RepoConfig{URL: repoURL, Prefix: ""})
-			slog.InfoContext(ctx, "Added repo from environment variable", "repoURL", repoURL)
-		}
-
-		if port := os.Getenv("PORT"); port != "" {
-			config.Port = port
-		}
 	}
 
 	// Validate required configuration
-	if len(config.Repos) == 0 {
+	if len(config.Repositories) == 0 {
 		slog.ErrorContext(ctx, "No repositories configured in config file or environment")
 		os.Exit(1)
 	}
@@ -93,7 +77,7 @@ func main() {
 	http.Handle("/", http.RedirectHandler("https://github.com/tuananh/oci-helm-proxy", http.StatusSeeOther))
 
 	slog.InfoContext(ctx, "Listening...", "port", config.Port)
-	slog.InfoContext(ctx, "Proxy Helm repo:", "repos", config.Repos)
+	slog.InfoContext(ctx, "Proxy Helm repo:", "repositories", config.Repositories)
 	slog.InfoContext(ctx, "Storage configuration:", "type", config.Storage.Type, "bucket", config.Storage.Bucket)
 	slog.ErrorContext(ctx, "ListenAndServe", "err", http.ListenAndServe(fmt.Sprintf(":%s", config.Port), nil))
 }
@@ -171,7 +155,7 @@ func (s *server) serveHelmManifest(w http.ResponseWriter, r *http.Request) {
 
 	// Find the appropriate repo based on prefix
 	var repoURL string
-	for _, repo := range s.config.Repos {
+	for _, repo := range s.config.Repositories {
 		if strings.HasPrefix(chartName, repo.Prefix) {
 			repoURL = repo.URL
 			// If prefix is not empty, remove it from the chart name

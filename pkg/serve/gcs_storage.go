@@ -26,24 +26,20 @@ type GCSStorage struct {
 
 // New creates a new GCSStorage instance
 func (s *GCSStorage) New(ctx context.Context, config types.StorageConfig) (StorageBackend, error) {
-	// Set default endpoint if not specified
 	endpoint := config.Endpoint
 	if endpoint == "" {
 		endpoint = "https://storage.googleapis.com"
 	}
 
-	// Validate bucket name
 	if config.Bucket == "" {
 		return nil, fmt.Errorf("bucket name is required for GCS storage")
 	}
 
-	// Initialize GCS client
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GCS client: %w", err)
 	}
 
-	// Return a new GCSStorage instance
 	return &GCSStorage{
 		bucket:   config.Bucket,
 		endpoint: endpoint,

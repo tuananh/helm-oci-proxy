@@ -28,24 +28,20 @@ type S3Storage struct {
 
 // New creates a new S3Storage instance
 func (s *S3Storage) New(ctx context.Context, config types.StorageConfig) (StorageBackend, error) {
-	// Set default endpoint if not specified
-	endpoint := config.Endpoint
-	if endpoint == "" {
-		endpoint = fmt.Sprintf("https://s3.%s.amazonaws.com", config.Region)
-	}
-
-	// Set default region if not specified
 	region := config.Region
 	if region == "" {
 		region = "us-east-1"
 	}
 
-	// Validate bucket name
+	endpoint := config.Endpoint
+	if endpoint == "" {
+		endpoint = fmt.Sprintf("https://s3.%s.amazonaws.com", config.Region)
+	}
+
 	if config.Bucket == "" {
 		return nil, fmt.Errorf("bucket name is required for S3 storage")
 	}
 
-	// Initialize AWS session
 	awsConfig := &aws.Config{
 		Region: aws.String(region),
 	}
@@ -57,16 +53,13 @@ func (s *S3Storage) New(ctx context.Context, config types.StorageConfig) (Storag
 		awsConfig.S3ForcePathStyle = aws.Bool(true)
 	}
 
-	// Create session
 	sess, err := session.NewSession(awsConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AWS session: %w", err)
 	}
 
-	// Create S3 client
 	s3Client := s3.New(sess)
 
-	// Return a new S3Storage instance
 	return &S3Storage{
 		bucket:   config.Bucket,
 		endpoint: endpoint,
