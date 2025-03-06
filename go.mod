@@ -1,6 +1,6 @@
 module github.com/tuananh/helm-oci-proxy
 
-go 1.21.1
+go 1.24
 
 require (
 	cloud.google.com/go/storage v1.35.1
@@ -8,6 +8,7 @@ require (
 	github.com/google/go-containerregistry v0.16.1
 	golang.org/x/sync v0.5.0
 	google.golang.org/api v0.151.0
+	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.13.2
 	k8s.io/apimachinery v0.28.2
 )

@@ -1,0 +1,18 @@
+# Helm OCI Proxy Configuration
+port: 5000
+
+# Storage configuration
+storage:
+  type: s3                          # Options: "s3" or "gcs"
+  endpoint: https://s3.amazonaws.com # Optional: custom endpoint URL
+  bucket: my-helm-charts            # Bucket name
+  region: us-west-2                 # Region (for S3)
+
+# List of Helm repositories to proxy
+repos:
+  - url: argo-cd
+    prefix: argo
+  - url: bitnami
+    prefix: bitnami
+  - url: jetstack
+    prefix: cert-manager 
