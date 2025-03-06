@@ -4,7 +4,6 @@ go 1.24
 
 require (
 	cloud.google.com/go/storage v1.35.1
-	github.com/alexellis/go-execute/v2 v2.2.1
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/google/go-containerregistry v0.16.1
 	golang.org/x/sync v0.5.0
