@@ -1,0 +1,12 @@
+port: 5000
+
+storage:
+  type: gcs
+  bucket: test-bucket-anhtt109
+  region: ap-southeast-1
+
+repositories:
+  - url: https://argoproj.github.io/argo-helm
+    prefix: argo
+  - url: https://charts.jetstack.io
+    prefix: jetstack

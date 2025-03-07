@@ -1,4 +1,4 @@
-SOURCE_DIRS = cmd pkg/serve pkg/types
+SOURCE_DIRS = cmd pkg/serve pkg/types pkg/helm
 
 # gcs bucket
 .PHONY: all
@@ -8,9 +8,13 @@ all: gofmt build
 build:
 	go build -o bin/helm-oci-proxy ./cmd
 
-.PHONY: run
-run: clean build
-	./bin/helm-oci-proxy -config s3.yaml
+.PHONY: run/s3
+run/s3: clean build
+	./bin/helm-oci-proxy -config example/s3.yaml
+
+.PHONY: run/gcs
+run/gcs: clean build
+	./bin/helm-oci-proxy -config example/gcs.yaml
 
 .PHONY: gofmt
 gofmt:

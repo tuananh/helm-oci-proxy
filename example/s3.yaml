@@ -1,0 +1,13 @@
+port: 5000
+
+storage:
+  type: s3
+  endpoint: http://127.0.0.1:8333
+  bucket: test-bucket
+  region: ap-southeast-1
+
+repositories:
+  - url: https://argoproj.github.io/argo-helm
+    prefix: argo
+  - url: https://charts.jetstack.io
+    prefix: jetstack

@@ -9,7 +9,6 @@ docker compose up -d
 Setup env var for AWS credentials (MinIO)   
 
 ```bash
-# AWS credentials
 export AWS_ACCESS_KEY_ID=testkey
 export AWS_SECRET_ACCESS_KEY=testsecret
 
