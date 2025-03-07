@@ -13,7 +13,6 @@ This take a legacy Helm repo and serve it as OCI registry.
 - [x] Add namespace so we can add proxy multiple legacy helm repos, probably with a config file.
 - [x] Add caching with S3. Not tested yet.
 - [x] Remove dependency on Helm CLI.
-- [ ] Handle tag list request
 
 ## Usage
 
@@ -28,6 +27,7 @@ helm pull oci://localhost:5000/argo/argo-cd --version 5.51.3
 ```
 
 It should works.
+You don't need to do `helm repo add` for OCI registry.
 
 ```sh
 $ helm pull oci://localhost:5000/argo/argo-cd --version 5.51.3
@@ -44,6 +44,12 @@ argo-cd/templates/_versions.tpl
 argo-cd/templates/aggregate-roles.yaml
 argo-cd/templates/argocd-application-controller/clusterrole.yaml
 argo-cd/templates/argocd-application-controller/clusterrolebinding.yaml
+```
+
+Or
+
+```sh
+$ helm show values oci://localhost:5000/argo/argo-cd --version 5.51.5
 ```
 
 ## License
