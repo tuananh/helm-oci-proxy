@@ -13,6 +13,7 @@ This take a legacy Helm repo and serve it as OCI registry.
 - [x] Add namespace so we can add proxy multiple legacy helm repos, probably with a config file.
 - [x] Add caching with S3. Not tested yet.
 - [x] Remove dependency on Helm CLI.
+- [ ] Add local storage backend
 
 ## Usage
 
