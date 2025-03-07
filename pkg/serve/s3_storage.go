@@ -53,6 +53,7 @@ func (s *S3Storage) New(ctx context.Context, config types.StorageConfig) (Storag
 		awsConfig.S3ForcePathStyle = aws.Bool(true)
 	}
 
+	slog.InfoContext(ctx, "debug", "region", region, "endpoint", endpoint, "bucket", config.Bucket)
 	sess, err := session.NewSession(awsConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AWS session: %w", err)
@@ -76,6 +77,8 @@ func (s *S3Storage) Blob(w http.ResponseWriter, r *http.Request, name string) {
 	} else {
 		url = fmt.Sprintf("https://%s.s3.%s.amazonaws.com/blobs/%s", s.bucket, s.region, name)
 	}
+
+	slog.InfoContext(r.Context(), "debug", "url", url)
 	http.Redirect(w, r, url, http.StatusSeeOther)
 }
 

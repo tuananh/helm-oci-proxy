@@ -10,7 +10,7 @@ build:
 
 .PHONY: run
 run: clean build
-	./bin/helm-oci-proxy -config config.yaml.example
+	./bin/helm-oci-proxy -config s3.yaml
 
 .PHONY: gofmt
 gofmt:

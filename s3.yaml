@@ -2,8 +2,8 @@ port: 5000
 
 storage:
   type: s3                            # Options: "s3" or "gcs"
-  endpoint: https://s3.amazonaws.com  # Optional: custom endpoint URL
-  bucket: helm-oci-proxy              # Bucket name
+  endpoint: http://127.0.0.1:8333 # Optional: custom endpoint URL
+  bucket: test-bucket         # Bucket name
   region: ap-southeast-1              # Region (for S3)
 
 # List of Helm repositories to proxy
