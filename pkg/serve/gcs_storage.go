@@ -47,10 +47,54 @@ func (s *GCSStorage) New(ctx context.Context, config types.StorageConfig) (Stora
 	}, nil
 }
 
-// Blob redirects to the blob in GCS
+// Blob streams the blob from GCS instead of redirecting
 func (s *GCSStorage) Blob(w http.ResponseWriter, r *http.Request, name string) {
-	url := fmt.Sprintf("https://storage.googleapis.com/%s/blobs/%s", s.bucket, name)
-	http.Redirect(w, r, url, http.StatusSeeOther)
+	ctx := r.Context()
+
+	obj := s.client.Bucket(s.bucket).Object(fmt.Sprintf("blobs/%s", name))
+
+	attrs, err := obj.Attrs(ctx)
+	if err != nil {
+		if err == storage.ErrObjectNotExist {
+			http.Error(w, fmt.Sprintf("Blob %s not found", name), http.StatusNotFound)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Failed to get blob attributes: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", attrs.ContentType)
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", attrs.Size))
+	if digest := attrs.Metadata["Docker-Content-Digest"]; digest != "" {
+		w.Header().Set("Docker-Content-Digest", digest)
+	}
+
+	// If it's just a HEAD request, we're done
+	if r.Method == http.MethodHead {
+		return
+	}
+
+	reader, err := obj.NewReader(ctx)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read blob: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
+
+	// Stream the content to the response
+	if _, err := io.Copy(w, reader); err != nil {
+		// Check if it's a context cancellation
+		if err == context.Canceled || (ctx.Err() == context.Canceled) {
+			// Client disconnected - this is normal, just log at debug level
+			slog.DebugContext(ctx, "Client disconnected while streaming blob",
+				"name", name)
+			return
+		}
+		// Log other errors as they might be important
+		slog.ErrorContext(ctx, "Error streaming blob",
+			"name", name,
+			"error", err)
+	}
 }
 
 // BlobExists checks if a blob exists in GCS

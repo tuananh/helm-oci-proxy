@@ -14,7 +14,7 @@ This take a legacy Helm repo and serve it as OCI registry.
 - [x] Add caching with S3. Not tested yet.
 - [x] Remove dependency on Helm CLI.
 - [ ] Add local storage backend
-- [ ] Fix GCS blob stream instead of redirect because it can be private bucket
+- [x] Fix GCS blob stream instead of redirect because it can be private bucket
 
 ## Usage
 
