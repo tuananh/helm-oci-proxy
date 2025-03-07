@@ -69,17 +69,43 @@ func (s *S3Storage) New(ctx context.Context, config types.StorageConfig) (Storag
 	}, nil
 }
 
-// Blob redirects to the blob in S3
+// Blob streams the blob content from S3
 func (s *S3Storage) Blob(w http.ResponseWriter, r *http.Request, name string) {
-	var url string
-	if s.endpoint != "" {
-		url = fmt.Sprintf("%s/%s/blobs/%s", s.endpoint, s.bucket, name)
-	} else {
-		url = fmt.Sprintf("https://%s.s3.%s.amazonaws.com/blobs/%s", s.bucket, s.region, name)
+	ctx := r.Context()
+
+	// Create a GetObject request for the blob
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(fmt.Sprintf("blobs/%s", name)),
 	}
 
-	slog.InfoContext(r.Context(), "debug", "url", url)
-	http.Redirect(w, r, url, http.StatusSeeOther)
+	// Get the object from S3
+	result, err := s.client.GetObjectWithContext(ctx, input)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to get blob from S3", "name", name, "error", err)
+		http.Error(w, fmt.Sprintf("Failed to get blob: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer result.Body.Close()
+
+	// Set appropriate headers
+	if result.ContentType != nil {
+		w.Header().Set("Content-Type", *result.ContentType)
+	}
+	if result.ContentLength != nil {
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", *result.ContentLength))
+	}
+	if digest, ok := result.Metadata["Docker-Content-Digest"]; ok && digest != nil {
+		w.Header().Set("Docker-Content-Digest", *digest)
+	}
+
+	// Stream the content to the client using a buffer to improve performance
+	buf := make([]byte, 4096) // 4KB buffer
+	_, err = io.CopyBuffer(w, result.Body, buf)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to stream blob content", "name", name, "error", err)
+		// Note: Headers might have been sent already, so we can't change the status code here
+	}
 }
 
 // BlobExists checks if a blob exists in S3
@@ -272,7 +298,7 @@ func (s *S3Storage) ServeManifest(w http.ResponseWriter, r *http.Request, img v1
 		return nil
 	}
 
-	// Redirect to manifest blob.
+	// Stream the manifest blob from S3.
 	s.Blob(w, r, digest.String())
 	return nil
 }
