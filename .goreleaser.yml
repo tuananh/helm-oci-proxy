@@ -1,7 +1,10 @@
+version: 2
+
 project_name: helm-oci-proxy
 
 builds:
   - main: ./cmd/main.go
+    binary: helm-oci-proxy
     env:
       - CGO_ENABLED=0
     goos:
@@ -18,7 +21,12 @@ dockers:
     goarch: amd64
     build_flag_templates:
       - "--platform=linux/amd64"
-  
+    extra_files:
+      - go.mod
+      - go.sum
+      - cmd/
+      - pkg/
+      
   - image_templates:
       - "ghcr.io/tuananh/{{ .ProjectName }}:nightly-arm64"
     dockerfile: Dockerfile
@@ -26,6 +34,11 @@ dockers:
     goarch: arm64
     build_flag_templates:
       - "--platform=linux/arm64"
+    extra_files:
+      - go.mod
+      - go.sum
+      - cmd/
+      - pkg/
 
 docker_manifests:
   - name_template: ghcr.io/tuananh/{{ .ProjectName }}:nightly
