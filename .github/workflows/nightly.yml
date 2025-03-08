@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Allows manual triggering
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -33,6 +33,15 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Create tip tag
+        run: |
+          if git rev-parse --verify tip >/dev/null 2>&1; then
+            git tag -d tip
+            git push origin :refs/tags/tip
+          fi
+          git tag tip
+          git push origin tip
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
