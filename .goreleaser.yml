@@ -1,0 +1,24 @@
+project_name: helm-oci-proxy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+dockers:
+  - image_templates:
+      - "ghcr.io/tuananh/{{ .ProjectName }}:nightly"
+      - "ghcr.io/tuananh/{{ .ProjectName }}:{{ .Version }}"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--platform=linux/arm64"
+    use: buildx
+
+# This ensures GoReleaser doesn't require a git tag for releases
+release:
+  disable: true 
