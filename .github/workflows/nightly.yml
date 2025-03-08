@@ -48,6 +48,15 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean --snapshot
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-oci-proxy
+          path: |
+            dist/*.tar.gz
+            dist/*_checksums.txt
+          if-no-files-found: error
