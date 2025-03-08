@@ -12,13 +12,26 @@ builds:
 
 dockers:
   - image_templates:
-      - "ghcr.io/tuananh/{{ .ProjectName }}:nightly"
-      - "ghcr.io/tuananh/{{ .ProjectName }}:{{ .Version }}"
+      - "ghcr.io/tuananh/{{ .ProjectName }}:nightly-amd64"
     dockerfile: Dockerfile
+    use: buildx
+    goarch: amd64
     build_flag_templates:
       - "--platform=linux/amd64"
-      - "--platform=linux/arm64"
+  
+  - image_templates:
+      - "ghcr.io/tuananh/{{ .ProjectName }}:nightly-arm64"
+    dockerfile: Dockerfile
     use: buildx
+    goarch: arm64
+    build_flag_templates:
+      - "--platform=linux/arm64"
+
+docker_manifests:
+  - name_template: ghcr.io/tuananh/{{ .ProjectName }}:nightly
+    image_templates:
+      - ghcr.io/tuananh/{{ .ProjectName }}:nightly-amd64
+      - ghcr.io/tuananh/{{ .ProjectName }}:nightly-arm64
 
 # This ensures GoReleaser doesn't require a git tag for releases
 release:
