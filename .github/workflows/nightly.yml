@@ -34,14 +34,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Create tip tag
+      - name: Create 0.0.0-nightly tag
         run: |
-          if git rev-parse --verify tip >/dev/null 2>&1; then
-            git tag -d tip
-            git push origin :refs/tags/tip
+          if git rev-parse --verify 0.0.0-nightly >/dev/null 2>&1; then
+            git tag -d 0.0.0-nightly
+            git push origin :refs/tags/0.0.0-nightly
           fi
-          git tag tip
-          git push origin tip
+          git tag 0.0.0-nightly
+          git push origin 0.0.0-nightly
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
