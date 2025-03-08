@@ -18,11 +18,25 @@ This take a legacy Helm repo and serve it as OCI registry.
 
 ## Usage
 
+### Running locally
+
 ```sh
 go run ./cmd -config config.yaml
 ```
 
-Try pulling your helm chart
+### Using Docker
+
+You can run `helm-oci-proxy` using the pre-built Docker image:
+
+```sh
+docker run -v $(pwd)/config.yaml:/app/config.yaml -p 5000:5000 ghcr.io/tuananh/helm-oci-proxy:nightly --config config.yaml
+```
+
+The container image is built nightly and published to GitHub Container Registry. Both AMD64 and ARM64 architectures are supported.
+
+### Testing the proxy
+
+Try pulling your helm chart:
 
 ```sh
 helm pull oci://localhost:5000/argo/argo-cd --version 5.51.3

@@ -13,14 +13,14 @@ RUN go mod download
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags="-w -s" -o bin/helm-oci-proxy ./cmd
+    go build -ldflags="-w -s" -o helm-oci-proxy ./cmd
 
 # Final stage
 FROM cgr.dev/chainguard/static:latest
 
 WORKDIR /app
-COPY --from=builder /app/bin/helm-oci-proxy /app/bin/
+COPY --from=builder /app/helm-oci-proxy /app
 
 EXPOSE 5000
 
-ENTRYPOINT ["/app/bin/helm-oci-proxy"]
+ENTRYPOINT ["/app/helm-oci-proxy"]
