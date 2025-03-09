@@ -2,7 +2,7 @@ SOURCE_DIRS = cmd pkg/serve pkg/types pkg/helm
 
 # gcs bucket
 .PHONY: all
-all: gofmt build
+all: gofmt pre-commit build
 
 .PHONY: build
 build:
@@ -19,6 +19,10 @@ run/gcs: clean build
 .PHONY: gofmt
 gofmt:
 	@gofmt -l -s ${SOURCE_DIRS} ./
+
+.PHONY: pre-commit
+pre-commit:
+	@pre-commit run --all-files
 
 .PHONY: clean
 clean:

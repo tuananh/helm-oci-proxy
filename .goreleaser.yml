@@ -26,7 +26,7 @@ dockers:
       - go.sum
       - cmd/
       - pkg/
-      
+
   - image_templates:
       - "ghcr.io/tuananh/{{ .ProjectName }}:nightly-arm64"
     dockerfile: Dockerfile
@@ -48,4 +48,4 @@ docker_manifests:
 
 # This ensures GoReleaser doesn't require a git tag for releases
 release:
-  disable: true 
+  disable: true

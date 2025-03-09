@@ -1,9 +1,9 @@
-name: Nightly Build
+name: Nightly build
 
 on:
   schedule:
     # Run at 1 AM GMT+7 (18:00 UTC previous day)
-    - cron: '0 18 * * *'
+    - cron: "0 18 * * *"
   workflow_dispatch: # Allows manual triggering
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24'
+          go-version: "1.24"
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -51,12 +51,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: helm-oci-proxy
-          path: |
-            dist/*.tar.gz
-            dist/*_checksums.txt
-          if-no-files-found: error
