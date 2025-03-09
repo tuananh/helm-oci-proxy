@@ -27,8 +27,13 @@ import (
 	"github.com/tuananh/helm-oci-proxy/pkg/types"
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/registry"
 	"k8s.io/apimachinery/pkg/util/json"
+)
+
+// so we dont have to import helm.sh/helm/v3/pkg/registry
+const (
+	ChartLayerMediaType = "application/vnd.oci.image.layer.v1.tar+gzip"
+	ConfigMediaType     = "application/vnd.oci.image.config.v1+json"
 )
 
 func main() {
@@ -255,12 +260,12 @@ func (s *server) build(ctx context.Context, repoURL string, chartName string, ch
 	}
 
 	// we create 2 layers: config & chart layer content
-	v1Layer, err := v1tar.LayerFromFile(chartPath, v1tar.WithMediaType(registry.ChartLayerMediaType))
+	v1Layer, err := v1tar.LayerFromFile(chartPath, v1tar.WithMediaType(ChartLayerMediaType))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OCI layer from .tgz: %w", err)
 	}
 
-	configLayer := static.NewLayer(configData, registry.ConfigMediaType)
+	configLayer := static.NewLayer(configData, ConfigMediaType)
 	adds := make([]mutate.Addendum, 0, 2)
 	adds = append(adds, mutate.Addendum{
 		Layer: configLayer,
@@ -286,7 +291,7 @@ func (s *server) build(ctx context.Context, repoURL string, chartName string, ch
 		return empty.Image, fmt.Errorf("unable to append OCI layer to empty image: %w", err)
 	}
 
-	v1Image = mutate.ConfigMediaType(v1Image, registry.ConfigMediaType)
+	v1Image = mutate.ConfigMediaType(v1Image, ConfigMediaType)
 	v1Image = mutate.MediaType(v1Image, ocitypes.OCIManifestSchema1)
 
 	slog.InfoContext(ctx, "build OCI helm chart completed")
