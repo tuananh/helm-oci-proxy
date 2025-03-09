@@ -4,6 +4,10 @@ SOURCE_DIRS = cmd pkg/serve pkg/types pkg/helm
 build:
 	go build -o bin/helm-oci-proxy ./cmd
 
+.PHONY: build/wasm
+build/wasm:
+	GOOS=wasip1 GOARCH=wasm go build -o bin/helm-oci-proxy.wasm ./cmd
+
 .PHONY: run/s3
 run/s3: clean build
 	./bin/helm-oci-proxy -config example/s3.yaml
@@ -20,3 +24,4 @@ fmt:
 .PHONY: clean
 clean:
 	@rm -f bin/go-clean-proxy
+	@rm -f bin/helm-oci-proxy.wasm
